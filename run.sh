@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 cliReleases=("19.03.15" "20.10.0" "20.10.12" "20.10.16")
-cliRefs=("84b86e23b7f520b0bb956df88331d6c8d472ce0e" "2b4ffb301bb1cdd1adeb321807e10a9c656f346e")
+cliRefs=("2b4ffb301bb1cdd1adeb321807e10a9c656f346e" "84b86e23b7f520b0bb956df88331d6c8d472ce0e")
 composeCliRef="https://github.com/crazy-max/compose-cli.git#mobycli-env"
 
 rm -rf ./fixtures
@@ -22,15 +22,15 @@ done
 
 for i in "${!cliRefs[@]}"; do
   ref="${cliRefs[$i]}"
-  if [ ! -f "./builds/docker-22.06.0-${i}-${ref}-$(uname -p)" ]; then
+  if [ ! -f "./builds/docker-22.xx-${i}-${ref}-$(uname -p)" ]; then
     (
       output=$(mktemp -d -t cli-bench-output.XXXXXXXXXX)
       docker buildx bake --set "*.output=$output" "https://github.com/docker/cli.git#${ref}"
-      cp $output/docker-* "./builds/docker-22.06.0-${i}-${ref}-$(uname -p)"
+      cp $output/docker-* "./builds/docker-22.xx-${i}-${ref}-$(uname -p)"
       rm -rf "$output"
     )
   fi
-  cp "./builds/docker-22.06.0-${i}-${ref}-$(uname -p)" "./fixtures/docker-22.xx-${i}-${ref}"
+  cp "./builds/docker-22.xx-${i}-${ref}-$(uname -p)" "./fixtures/docker-22.xx-${i}-${ref}"
 done
 
 if [ ! -f "./builds/compose-cli-$(uname -p)" ]; then
