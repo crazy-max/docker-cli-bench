@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 cliReleases=("19.03.15" "20.10.0" "20.10.12" "20.10.16")
-cliRefs=("2b4ffb301bb1cdd1adeb321807e10a9c656f346e" "84b86e23b7f520b0bb956df88331d6c8d472ce0e")
+cliRefs=("2b4ffb301bb1cdd1adeb321807e10a9c656f346e" "a09e61a247656c780d2ae487a276ea1761ceb85c" "84b86e23b7f520b0bb956df88331d6c8d472ce0e")
 composeCliRef="https://github.com/crazy-max/compose-cli.git#mobycli-env"
 
 rm -rf ./fixtures
