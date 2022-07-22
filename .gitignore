@@ -1,4 +1,3 @@
 /builds
-/fixtures
+/fixtures*
 /bench.txt
-/compose-cli
