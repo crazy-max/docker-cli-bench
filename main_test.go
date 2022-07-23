@@ -60,11 +60,12 @@ func BenchmarkBuildxVersion(b *testing.B) {
 		if err != nil {
 			b.Fatal(err)
 		}
-		dt, err := ioutil.ReadFile(buildx)
-		if err != nil {
-			b.Fatal(err)
+		if _, err := os.Lstat(buildxPluginPath); err == nil {
+			if err := os.Remove(buildxPluginPath); err != nil {
+				b.Fatal(err)
+			}
 		}
-		if err = ioutil.WriteFile(buildxPluginPath, dt, 0755); err != nil {
+		if err := os.Symlink(buildx, buildxPluginPath); err != nil {
 			b.Fatal(err)
 		}
 		for _, tt := range cfs {
@@ -79,7 +80,7 @@ func BenchmarkBuildxVersion(b *testing.B) {
 					var stdout bytes.Buffer
 					cmd.Stdout = &stdout
 					if err := cmd.Run(); err != nil {
-						b.Error(err)
+						b.Fatal(err)
 					}
 				}
 			})
@@ -139,29 +140,65 @@ func BenchmarkCliVersionViaComposeCli(b *testing.B) {
 func BenchmarkBuildxVersionViaComposeCli(b *testing.B) {
 	cfs, _ := ioutil.ReadDir("fixtures")
 	cclifs, _ := ioutil.ReadDir("fixtures-compose-cli")
-	for _, tt1 := range cclifs {
-		tt1 := tt1
-		composeCli, err := composeCliPath(tt1.Name())
+	buildxfs, _ := ioutil.ReadDir("fixtures-buildx")
+	homedir, err := os.UserHomeDir()
+	if err != nil {
+		b.Fatal(err)
+	}
+	cliPluginsPath := filepath.Join(homedir, ".docker", "cli-plugins")
+	if _, err = os.Stat(cliPluginsPath); errors.Is(err, os.ErrNotExist) {
+		if err = os.MkdirAll(cliPluginsPath, 0755); err != nil {
+			b.Fatal(err)
+		}
+	}
+	buildxPluginPath := filepath.Join(cliPluginsPath, "docker-buildx")
+	if _, err = os.Stat(buildxPluginPath); err == nil {
+		if err = os.Rename(buildxPluginPath, buildxPluginPath+".bak"); err != nil {
+			b.Fatal(err)
+		}
+		defer func() {
+			if err = os.Rename(buildxPluginPath+".bak", buildxPluginPath); err != nil {
+				b.Fatal(err)
+			}
+		}()
+	}
+	for _, tt0 := range buildxfs {
+		buildx, err := buildxPath(tt0.Name())
 		if err != nil {
 			b.Fatal(err)
 		}
-		for _, tt := range cfs {
-			tt := tt
-			b.Run(tt1.Name()+"-"+tt.Name(), func(b *testing.B) {
-				dockerCli, err := dockerCliPath(tt.Name())
-				if err != nil {
-					b.Fatal(err)
-				}
-				for i := 0; i < b.N; i++ {
-					cmd := exec.Command(composeCli, "buildx", "version")
-					cmd.Env = append(os.Environ(), "DOCKER_COM_DOCKER_CLI="+dockerCli)
-					var stdout bytes.Buffer
-					cmd.Stdout = &stdout
-					if err := cmd.Run(); err != nil {
-						b.Error(err)
+		if _, err := os.Lstat(buildxPluginPath); err == nil {
+			if err := os.Remove(buildxPluginPath); err != nil {
+				b.Fatal(err)
+			}
+		}
+		if err := os.Symlink(buildx, buildxPluginPath); err != nil {
+			b.Fatal(err)
+		}
+		for _, tt1 := range cclifs {
+			tt1 := tt1
+			composeCli, err := composeCliPath(tt1.Name())
+			if err != nil {
+				b.Fatal(err)
+			}
+			for _, tt := range cfs {
+				tt := tt
+				b.Run(tt0.Name()+"-"+tt1.Name()+"-"+tt.Name(), func(b *testing.B) {
+					dockerCli, err := dockerCliPath(tt.Name())
+					if err != nil {
+						b.Fatal(err)
 					}
-				}
-			})
+					for i := 0; i < b.N; i++ {
+						cmd := exec.Command(composeCli, "buildx", "version")
+						cmd.Env = append(os.Environ(), "DOCKER_COM_DOCKER_CLI="+dockerCli)
+						var stdout bytes.Buffer
+						cmd.Stdout = &stdout
+						if err := cmd.Run(); err != nil {
+							b.Error(err)
+						}
+					}
+				})
+			}
 		}
 	}
 }
