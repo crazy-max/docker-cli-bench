@@ -2,7 +2,7 @@
 
 cliReleases=("19.03.15" "20.10.0" "20.10.12" "20.10.17")
 cliRefs=("2b4ffb301bb1cdd1adeb321807e10a9c656f346e" "a09e61a247656c780d2ae487a276ea1761ceb85c" "84b86e23b7f520b0bb956df88331d6c8d472ce0e" "c59773f1551a8fd289538efc82274332f31f8c19" "f1615facb1ca44e4336ab20e621315fc2cfb845a")
-composeCliRefs=("main" "mobycli-env")
+composeCliRefs=("1.0.26-env" "build-metrics-futureproof2" "go-1.18-test" "go-1.18")
 buildxRefs=("v0.7.0" "v0.8.2" "701c548e46348da2958104907c9572ea7ce6ab52" "update-docker-cli")
 
 rm -rf ./fixtures*
