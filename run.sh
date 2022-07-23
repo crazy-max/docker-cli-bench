@@ -9,55 +9,92 @@ rm -rf ./fixtures*
 mkdir ./fixtures ./fixtures-compose-cli ./fixtures-buildx
 mkdir -p ./builds
 
+os="linux"
+if [ "$(uname -s)" = "Darwin" ]; then
+  os="mac"
+fi
+
+arch="$(uname -m)"
+case "$(uname -m)" in
+	"amd64")
+		arch="x86_64"
+		;;
+	"386")
+		arch="i386"
+		;;
+	"arm64")
+		arch="aarch64"
+		;;
+	"armv7")
+		arch="armhf"
+		;;
+	"armv6")
+		arch="armel"
+		;;
+	"ppc64le")
+		arch="ppc64le"
+		;;
+	"s390x")
+		arch="s390x"
+		;;
+esac
+
 for release in "${cliReleases[@]}"; do
-  if [ ! -f "./builds/docker-${release}-$(uname -p)" ]; then
-    (
-      output=$(mktemp -d -t cli-bench-output.XXXXXXXXXX)
-      wget -qO- "https://download.docker.com/linux/static/stable/$(uname -p)/docker-${release}.tgz" | tar xvz --strip 1 -C "$output"
-      cp "$output/docker" "./builds/docker-${release}-$(uname -p)"
-      rm -rf "$output"
-    )
+  if [ ! -f "./builds/docker-${release}-${os}-${arch}" ]; then
+    cliURL="https://download.docker.com/${os}/static/stable/${arch}/docker-${release}.tgz"
+    if curl --head --silent --fail "${cliURL}" 1>/dev/null 2>&1; then
+      (
+        output=$(mktemp -d -t cli-bench-output.XXXXXXXXXX)
+        wget -qO- "${cliURL}" | tar xvz --strip 1 -C "$output"
+        cp "$output/docker" "./builds/docker-${release}-${os}-${arch}"
+        rm -rf "$output"
+      )
+    else
+      echo "$cliURL not found"
+    fi
   fi
-  cp "./builds/docker-${release}-$(uname -p)" "./fixtures/docker-${release}"
+  if [ -f "./builds/docker-${release}-${os}-${arch}" ]; then
+    cp "./builds/docker-${release}-${os}-${arch}" "./fixtures/docker-${release}"
+  fi
 done
 
 for i in "${!cliRefs[@]}"; do
   ref="${cliRefs[$i]}"
-  if [ ! -f "./builds/docker-22.xx-${i}-${ref}-$(uname -p)" ]; then
+  if [ ! -f "./builds/docker-22.xx-${i}-${ref}-${os}-${arch}" ]; then
     (
       output=$(mktemp -d -t cli-bench-output.XXXXXXXXXX)
-      docker buildx bake --set "*.output=$output" "https://github.com/docker/cli.git#${ref}"
-      cp $output/docker-* "./builds/docker-22.xx-${i}-${ref}-$(uname -p)"
+      docker buildx bake --set "*.platform=local" --set "*.output=$output" "https://github.com/docker/cli.git#${ref}"
+      cp $output/docker-* "./builds/docker-22.xx-${i}-${ref}-${os}-${arch}"
       rm -rf "$output"
     )
   fi
-  cp "./builds/docker-22.xx-${i}-${ref}-$(uname -p)" "./fixtures/docker-22.xx-${i}-${ref}"
+  cp "./builds/docker-22.xx-${i}-${ref}-${os}-${arch}" "./fixtures/docker-22.xx-${i}-${ref}"
 done
 
 for i in "${!composeCliRefs[@]}"; do
   ref="${composeCliRefs[$i]}"
-  if [ ! -f "./builds/compose-cli-${i}-${ref}-$(uname -p)" ]; then
+  if [ ! -f "./builds/compose-cli-${i}-${ref}-${os}-${arch}" ]; then
     (
       output=$(mktemp -d -t cli-bench-output.XXXXXXXXXX)
       docker buildx build --platform=local --target=cli --output=$output "https://github.com/crazy-max/compose-cli.git#${ref}"
-      cp "$output/docker" "./builds/compose-cli-${i}-${ref}-$(uname -p)"
+      cp "$output/docker" "./builds/compose-cli-${i}-${ref}-${os}-${arch}"
       rm -rf "$output"
     )
   fi
-  cp "./builds/compose-cli-${i}-${ref}-$(uname -p)" "./fixtures-compose-cli/compose-cli-${i}-${ref}"
+  cp "./builds/compose-cli-${i}-${ref}-${os}-${arch}" "./fixtures-compose-cli/compose-cli-${i}-${ref}"
 done
 
 for i in "${!buildxRefs[@]}"; do
   ref="${buildxRefs[$i]}"
-  if [ ! -f "./builds/buildx-${i}-${ref}-$(uname -p)" ]; then
+  if [ ! -f "./builds/buildx-${i}-${ref}-${os}-${arch}" ]; then
     (
       output=$(mktemp -d -t cli-bench-output.XXXXXXXXXX)
-      docker buildx bake --set *.output=$output "https://github.com/crazy-max/buildx.git#${ref}"
-      cp "$output/buildx" "./builds/buildx-${i}-${ref}-$(uname -p)"
+      docker buildx bake --set "*.platform=local" --set "*.output=$output" "https://github.com/crazy-max/buildx.git#${ref}"
+      cp "$output/buildx" "./builds/buildx-${i}-${ref}-${os}-${arch}"
       rm -rf "$output"
     )
   fi
-  cp "./builds/buildx-${i}-${ref}-$(uname -p)" "./fixtures-buildx/buildx-${i}-${ref}"
+  cp "./builds/buildx-${i}-${ref}-${os}-${arch}" "./fixtures-buildx/buildx-${i}-${ref}"
 done
 
 go test -run=NONE -bench=. -benchtime=5x | tee bench.txt
