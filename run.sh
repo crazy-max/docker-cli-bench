@@ -75,18 +75,18 @@ for i in "${!cliRefs[@]}"; do
   cp "./builds/docker-dev-${i}-${ref}-${os}-${arch}" "./fixtures/docker-dev-${ref#v}"
 done
 
-#for i in "${!composeCliRefs[@]}"; do
-#  ref="${composeCliRefs[$i]}"
-#  if [ ! -f "./builds/compose-cli-${i}-${ref}-${os}-${arch}" ]; then
-#    (
-#      out="$tmpdir/$(openssl rand -hex 20)"
-#      mkdir -p "$out"
-#      docker buildx build --platform=local --target=cli --output="$out" "https://github.com/docker/compose-cli.git#${ref}"
-#      cp "$out/docker" "./builds/compose-cli-${i}-${ref}-${os}-${arch}"
-#    )
-#  fi
-#  cp "./builds/compose-cli-${i}-${ref}-${os}-${arch}" "./fixtures-compose-cli/compose-cli-${ref#v}"
-#done
+for i in "${!composeCliRefs[@]}"; do
+  ref="${composeCliRefs[$i]}"
+  if [ ! -f "./builds/compose-cli-${i}-${ref}-${os}-${arch}" ]; then
+    (
+      out="$tmpdir/$(openssl rand -hex 20)"
+      mkdir -p "$out"
+      docker buildx build --platform=local --target=cli --output="$out" "https://github.com/docker/compose-cli.git#${ref}"
+      cp "$out/docker" "./builds/compose-cli-${i}-${ref}-${os}-${arch}"
+    )
+  fi
+  cp "./builds/compose-cli-${i}-${ref}-${os}-${arch}" "./fixtures-compose-cli/compose-cli-${ref#v}"
+done
 
 for i in "${!buildxRefs[@]}"; do
   ref="${buildxRefs[$i]}"
@@ -132,6 +132,24 @@ for binCli in ./fixtures/*; do
 done
 hyperfine --warmup 2 --runs 5 --export-markdown "$tmpdir/bench-docker-buildx.md" "${cmdsDockerBuildx[@]}"
 
+# benchmark "docker buildx version" (through compose-cli)
+cmdsCCLIDockerBuildx=()
+for binCli in ./fixtures/*; do
+  filenameCli=$(basename -- "$binCli")
+  for binCCLI in ./fixtures-compose-cli/*; do
+    filenameCCLI=$(basename -- "$binCCLI")
+    for binBuildx in ./fixtures-buildx/*; do
+      filenameBuildx=$(basename -- "$binBuildx")
+      dockerConfig="${tmpdir}/.docker/${filenameBuildx}"
+      cliPlugins="${tmpdir}/.docker/${filenameBuildx}/cli-plugins"
+      mkdir -p "${cliPlugins}"
+      cp "${binBuildx}" "${cliPlugins}/docker-buildx"
+      cmdsCCLIDockerBuildx+=("-n=${filenameCCLI}-${filenameCli}-${filenameBuildx}" "DOCKER_CONFIG=$dockerConfig DOCKER_COM_DOCKER_CLI=$binCli $binCCLI buildx version")
+    done
+  done
+done
+hyperfine --warmup 2 --runs 5 --export-markdown "$tmpdir/bench-ccli-docker-buildx.md" "${cmdsCCLIDockerBuildx[@]}"
+
 cat > bench.md <<EOL
 ## \`docker --version\`
 
@@ -144,4 +162,8 @@ $(cat "$tmpdir"/bench-buildx.md)
 ## \`docker buildx version\`
 
 $(cat "$tmpdir"/bench-docker-buildx.md)
+
+## \`docker buildx version\` (through compose-cli)
+
+$(cat "$tmpdir"/bench-ccli-docker-buildx.md)
 EOL
