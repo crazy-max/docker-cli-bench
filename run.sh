@@ -48,6 +48,7 @@ for release in "${cliReleases[@]}"; do
     cliURL="https://download.docker.com/${os}/static/stable/${arch}/docker-${release}.tgz"
     if curl --head --silent --fail "${cliURL}" 1>/dev/null 2>&1; then
       (
+        set -e
         out="$tmpdir/$(openssl rand -hex 20)"
         mkdir -p "$out"
         wget -qO- "${cliURL}" | tar xvz --strip 1 -C "$out"
@@ -66,6 +67,7 @@ for i in "${!cliRefs[@]}"; do
   ref="${cliRefs[$i]}"
   if [ ! -f "./builds/docker-dev-${i}-${ref}-${os}-${arch}" ]; then
     (
+      set -e
       out="$tmpdir/$(openssl rand -hex 20)"
       mkdir -p "$out"
       docker buildx bake --set "*.platform=local" --set "*.output=$out" "https://github.com/crazy-max/docker-cli.git#${ref}"
@@ -79,6 +81,7 @@ for i in "${!composeCliRefs[@]}"; do
   ref="${composeCliRefs[$i]}"
   if [ ! -f "./builds/compose-cli-${i}-${ref}-${os}-${arch}" ]; then
     (
+      set -e
       out="$tmpdir/$(openssl rand -hex 20)"
       mkdir -p "$out"
       docker buildx build --platform=local --target=cli --output="$out" "https://github.com/docker/compose-cli.git#${ref}"
@@ -92,6 +95,7 @@ for i in "${!buildxRefs[@]}"; do
   ref="${buildxRefs[$i]}"
   if [ ! -f "./builds/buildx-${i}-${ref}-${os}-${arch}" ]; then
     (
+      set -e
       out="$tmpdir/$(openssl rand -hex 20)"
       mkdir -p "$out"
       docker buildx bake --set "*.platform=local" --set "*.output=$out" "https://github.com/docker/buildx.git#${ref}"
