@@ -2,7 +2,7 @@
 set -eu
 
 cliReleases=("19.03.15" "20.10.0" "20.10.12" "20.10.17" "20.10.23" "23.0.1")
-cliRefs=("pr-3419-a4b6fe1" "pr-3429-a09e61a" "pr-3635-84b86e2" "pr-3640-c59773f" "pr-3713-f1615fa" "pr-4114-f5d698a" "fix-perf-reg" "rm-plugins-completion")
+cliRefs=("pr-3419-a4b6fe1" "pr-3429-a09e61a" "pr-3635-84b86e2" "pr-3640-c59773f" "pr-3713-f1615fa" "pr-4114-f5d698a" "fix-perf-reg" "fix-perf-reg-2" "rm-plugins-completion")
 composeCliRefs=("v1.0.31")
 buildxRefs=("v0.10.4")
 
