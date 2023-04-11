@@ -51,7 +51,7 @@ for release in "${cliReleases[@]}"; do
         set -e
         out="$tmpdir/$(openssl rand -hex 20)"
         mkdir -p "$out"
-        wget -qO- "${cliURL}" | tar xvz --strip 1 -C "$out"
+        curl -fsSL "${cliURL}" | tar xvz --strip 1 -C "$out"
         cp "$out/docker" "./builds/docker-${release}-${os}-${arch}"
       )
     else
